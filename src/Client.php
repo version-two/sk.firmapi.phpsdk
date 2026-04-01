@@ -19,6 +19,8 @@ use GuzzleHttp\Exception\GuzzleException;
 class Client
 {
     private const DEFAULT_BASE_URL = 'https://api.firmapi.sk/v1';
+    private const SANDBOX_BASE_URL = 'https://api.firmapi.sk/v1/sandbox';
+    private const SANDBOX_API_KEY = 'fa_sandbox_test_key_firmapi_sk_2026';
     private const DEFAULT_TIMEOUT = 30;
 
     private HttpClient $http;
@@ -30,14 +32,21 @@ class Client
     public readonly Batch $batch;
     public readonly Account $account;
 
+    private bool $waitForFreshData;
+    private int $maxStaleRetries;
+
     public function __construct(
         string $apiKey,
         ?string $baseUrl = null,
         int $timeout = self::DEFAULT_TIMEOUT,
-        ?HttpClient $httpClient = null
+        ?HttpClient $httpClient = null,
+        bool $waitForFreshData = true,
+        int $maxStaleRetries = 3,
     ) {
         $this->apiKey = $apiKey;
         $this->baseUrl = rtrim($baseUrl ?? self::DEFAULT_BASE_URL, '/');
+        $this->waitForFreshData = $waitForFreshData;
+        $this->maxStaleRetries = $maxStaleRetries;
 
         $this->http = $httpClient ?? new HttpClient([
             'base_uri' => $this->baseUrl . '/',
@@ -49,10 +58,22 @@ class Client
             ],
         ]);
 
-        $this->companies = new Companies($this);
+        $this->companies = new Companies($this, $this->waitForFreshData, $this->maxStaleRetries);
         $this->search = new Search($this);
         $this->batch = new Batch($this);
         $this->account = new Account($this);
+    }
+
+    /**
+     * Create a sandbox client for testing.
+     * No API key needed, uses demo data, no rate limits.
+     */
+    public static function sandbox(): static
+    {
+        return new static(
+            apiKey: self::SANDBOX_API_KEY,
+            baseUrl: self::SANDBOX_BASE_URL,
+        );
     }
 
     /**
