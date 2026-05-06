@@ -107,6 +107,60 @@ class CompanyQuery
         return $this;
     }
 
+    public function withReges(): static
+    {
+        $this->scopes[] = 'reges';
+        return $this;
+    }
+
+    public function withSocialEnterprise(): static
+    {
+        $this->scopes[] = 'social_enterprise';
+        return $this;
+    }
+
+    public function withGleif(): static
+    {
+        $this->scopes[] = 'gleif';
+        return $this;
+    }
+
+    public function withSanctions(): static
+    {
+        $this->scopes[] = 'sanctions';
+        return $this;
+    }
+
+    public function withTedTenders(): static
+    {
+        $this->scopes[] = 'ted_tenders';
+        return $this;
+    }
+
+    public function withReplikAdministrator(): static
+    {
+        $this->scopes[] = 'replik_administrator';
+        return $this;
+    }
+
+    public function withSbs(): static
+    {
+        $this->scopes[] = 'sbs';
+        return $this;
+    }
+
+    public function withTransportLicence(): static
+    {
+        $this->scopes[] = 'transport_licence';
+        return $this;
+    }
+
+    public function withUtilityLicence(): static
+    {
+        $this->scopes[] = 'utility_licence';
+        return $this;
+    }
+
     public function withAll(): static
     {
         $this->scopes = ['all'];
