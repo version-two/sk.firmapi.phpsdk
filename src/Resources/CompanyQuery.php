@@ -161,6 +161,30 @@ class CompanyQuery
         return $this;
     }
 
+    public function withContractingAuthority(): static
+    {
+        $this->scopes[] = 'contracting_authority';
+        return $this;
+    }
+
+    public function withDebarred(): static
+    {
+        $this->scopes[] = 'debarred';
+        return $this;
+    }
+
+    public function withUvoReferences(): static
+    {
+        $this->scopes[] = 'uvo_references';
+        return $this;
+    }
+
+    public function withFsImports(): static
+    {
+        $this->scopes[] = 'fs_imports';
+        return $this;
+    }
+
     public function withAll(): static
     {
         $this->scopes = ['all'];
