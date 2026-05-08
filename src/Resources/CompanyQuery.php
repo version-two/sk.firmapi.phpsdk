@@ -209,6 +209,12 @@ class CompanyQuery
         return $this;
     }
 
+    public function withSvpsEstablishments(): static
+    {
+        $this->scopes[] = 'svps_establishments';
+        return $this;
+    }
+
     public function withAll(): static
     {
         $this->scopes = ['all'];
