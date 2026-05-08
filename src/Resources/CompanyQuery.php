@@ -185,6 +185,30 @@ class CompanyQuery
         return $this;
     }
 
+    public function withIllegalEmployment(): static
+    {
+        $this->scopes[] = 'illegal_employment';
+        return $this;
+    }
+
+    public function withCourtDecisions(): static
+    {
+        $this->scopes[] = 'court_decisions';
+        return $this;
+    }
+
+    public function withEmployerHeadcount(): static
+    {
+        $this->scopes[] = 'employer_headcount';
+        return $this;
+    }
+
+    public function withSoiTravelAgency(): static
+    {
+        $this->scopes[] = 'soi_travel_agency';
+        return $this;
+    }
+
     public function withAll(): static
     {
         $this->scopes = ['all'];
