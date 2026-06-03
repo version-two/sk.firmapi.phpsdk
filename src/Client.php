@@ -86,7 +86,13 @@ class Client
      */
     public function get(string $endpoint, array $query = []): array
     {
-        return $this->request('GET', $endpoint, ['query' => $query]);
+        // Only attach the `query` request option when there is something to
+        // send. Passing `['query' => []]` makes Guzzle REPLACE the URI query
+        // string with an empty one, which would strip any `?scope=...` that
+        // CompanyQuery::get() builds into the endpoint path.
+        $options = $query === [] ? [] : ['query' => $query];
+
+        return $this->request('GET', $endpoint, $options);
     }
 
     /**

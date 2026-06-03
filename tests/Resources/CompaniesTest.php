@@ -14,7 +14,7 @@ class CompaniesTest extends TestCase
             $this->jsonResponse(['data' => ['ico' => '51636549', 'name' => 'Version Two s. r. o.']]),
         ]);
 
-        $result = $client->companies->byIco('51636549');
+        $result = $client->companies->byIco('51636549')->get();
 
         $this->assertStringContainsString('/company/ico/51636549', $this->lastRequestUri());
         $this->assertSame('GET', $this->lastRequestMethod());
@@ -28,7 +28,7 @@ class CompaniesTest extends TestCase
             $this->jsonResponse(['data' => ['orsr_id' => '427482']]),
         ]);
 
-        $client->companies->byOrsrId('427482');
+        $client->companies->byOrsrId('427482')->get();
 
         $this->assertStringContainsString('/company/id/427482', $this->lastRequestUri());
         $this->assertSame('GET', $this->lastRequestMethod());
@@ -40,9 +40,21 @@ class CompaniesTest extends TestCase
             $this->jsonResponse(['data' => ['id' => 12345]]),
         ]);
 
-        $client->companies->byId(12345);
+        $client->companies->byId(12345)->get();
 
         $this->assertStringContainsString('/company/12345', $this->lastRequestUri());
+        $this->assertSame('GET', $this->lastRequestMethod());
+    }
+
+    public function test_with_crp_projects_adds_scope_to_request(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '51636549', 'crp_projects' => ['count' => 0, 'latest' => []]]]),
+        ]);
+
+        $client->companies->byIco('51636549')->withCrpProjects()->get();
+
+        $this->assertStringContainsString('scope=crp_projects', $this->lastRequestUri());
         $this->assertSame('GET', $this->lastRequestMethod());
     }
 
@@ -76,7 +88,7 @@ class CompaniesTest extends TestCase
             $this->jsonResponse($companyData),
         ]);
 
-        $result = $client->companies->byIco('51636549');
+        $result = $client->companies->byIco('51636549')->get();
 
         $this->assertSame($companyData, $result);
         $this->assertSame('2120776680', $result['data']['tax']['dic']);

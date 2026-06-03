@@ -215,6 +215,12 @@ class CompanyQuery
         return $this;
     }
 
+    public function withCrpProjects(): static
+    {
+        $this->scopes[] = 'crp_projects';
+        return $this;
+    }
+
     public function withAll(): static
     {
         $this->scopes = ['all'];
