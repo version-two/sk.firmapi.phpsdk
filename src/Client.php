@@ -192,14 +192,13 @@ class Client
         try {
             $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
+            // Genuinely malformed body (HTML error page, truncated response, ...).
             throw new ApiException('Malformed JSON response from API: ' . $e->getMessage(), 0, $e);
         }
 
-        if (!is_array($decoded)) {
-            throw new ApiException('Unexpected non-object JSON response from API.');
-        }
-
-        return $decoded;
+        // A valid but non-object payload (e.g. literal null) is treated as an
+        // empty result, preserving the SDK's long-standing contract.
+        return is_array($decoded) ? $decoded : [];
     }
 
     /**
