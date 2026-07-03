@@ -10,8 +10,11 @@ Official PHP SDK for [FirmAPI](https://firmapi.sk) - Slovak Company Data API.
 ## Installation
 
 ```bash
-composer require firmapi/phpsdk
+composer require firmapi/phpsdk:^2.0
 ```
+
+> These docs cover **v2.x**. Upgrading from v1? See the
+> [Upgrading from v1.x](#upgrading-from-v1x) section for the breaking changes.
 
 ## Quick Start
 
