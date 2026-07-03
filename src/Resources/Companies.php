@@ -12,7 +12,7 @@ class Companies
     private bool $waitForFreshData;
     private int $maxStaleRetries;
 
-    public function __construct(Client $client, bool $waitForFreshData = true, int $maxStaleRetries = 3)
+    public function __construct(Client $client, bool $waitForFreshData = false, int $maxStaleRetries = 3)
     {
         $this->client = $client;
         $this->waitForFreshData = $waitForFreshData;
@@ -49,21 +49,6 @@ class Companies
         return new CompanyQuery(
             $this->client,
             "/company/id/{$orsrId}",
-            $this->waitForFreshData,
-            $this->maxStaleRetries,
-        );
-    }
-
-    /**
-     * Look up a company by internal database ID.
-     *
-     * @param int $id Internal database ID
-     */
-    public function byId(int $id): CompanyQuery
-    {
-        return new CompanyQuery(
-            $this->client,
-            "/company/{$id}",
             $this->waitForFreshData,
             $this->maxStaleRetries,
         );

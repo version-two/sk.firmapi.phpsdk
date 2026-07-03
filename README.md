@@ -22,8 +22,8 @@ use FirmApi\Client;
 
 $client = new Client('your-api-key');
 
-// Get company by IČO
-$company = $client->companies->byIco('51636549');
+// Look up a company by IČO. byIco() returns a query; call get() to execute it.
+$company = $client->companies->byIco('51636549')->get();
 echo $company['data']['name']; // "Version Two s. r. o."
 
 // Search companies
@@ -32,6 +32,27 @@ foreach ($results['results'] as $result) {
     echo "{$result['text']} ({$result['ico']})\n";
 }
 ```
+
+## Fresh vs. cached data (important)
+
+FirmAPI serves precomputed company data immediately. When a background refresh
+is queued, the response carries `meta.stale = true` — the data you received is
+still valid; the flag only tells you a newer version is being prepared.
+
+By default (since v2.0) the SDK returns that immediately-available data without
+blocking. If you specifically need the post-refresh values and can tolerate the
+extra latency and billed re-poll requests, opt in per query with `fresh()`:
+
+```php
+// Fast (default): returns immediately, even if meta.stale is true
+$company = $client->companies->byIco('51636549')->get();
+
+// Wait for a completed refresh (blocks and re-polls, bounded)
+$company = $client->companies->byIco('51636549')->fresh()->get();
+```
+
+You can also make waiting the default for every lookup on a client (rarely
+needed) via the constructor flag / Laravel config below.
 
 ## Usage
 
@@ -42,20 +63,39 @@ use FirmApi\Client;
 
 $client = new Client('your-api-key');
 
-// With custom options
+// All constructor options (defaults shown)
 $client = new Client(
     apiKey: 'your-api-key',
-    baseUrl: 'https://api.firmapi.sk/v1', // optional
-    timeout: 30 // optional, in seconds
+    baseUrl: 'https://api.firmapi.sk/v1', // optional override
+    timeout: 30,                          // per-request HTTP timeout (seconds)
+    httpClient: null,                     // inject a preconfigured Guzzle client
+    waitForFreshData: false,              // block/re-poll until non-stale (opt-in)
+    maxStaleRetries: 3,                   // re-polls when waiting for fresh data
+    maxRetries: 2,                        // retries for transient 5xx/network errors
 );
+
+// Sandbox client (no key required, demo data, no rate limits)
+$sandbox = Client::sandbox();
 ```
+
+Transient failures (HTTP 5xx and network errors) are retried automatically with
+exponential backoff, up to `maxRetries`. HTTP 429 is **not** retried — it is
+raised as a `RateLimitException` so you control pacing.
 
 ### Laravel
 
-The SDK includes a Laravel service provider with auto-discovery. Add your API key to `.env`:
+The SDK includes a Laravel service provider with auto-discovery. Add your API
+key to `.env`:
 
 ```env
 FIRMAPI_API_KEY=your-api-key
+
+# Optional (defaults shown)
+FIRMAPI_BASE_URL=https://api.firmapi.sk/v1
+FIRMAPI_TIMEOUT=30
+FIRMAPI_WAIT_FOR_FRESH_DATA=false
+FIRMAPI_MAX_STALE_RETRIES=3
+FIRMAPI_MAX_RETRIES=2
 ```
 
 Optionally publish the config file:
@@ -73,7 +113,7 @@ class CompanyController extends Controller
 {
     public function show(Client $client, string $ico)
     {
-        return $client->companies->byIco($ico);
+        return $client->companies->byIco($ico)->get();
     }
 }
 ```
@@ -82,14 +122,86 @@ class CompanyController extends Controller
 
 ```php
 // Get company by IČO (8-digit registration number)
-$company = $client->companies->byIco('51636549');
+$company = $client->companies->byIco('51636549')->get();
 
 // Get company by ORSR ID
-$company = $client->companies->byOrsrId('427482');
-
-// Get company by internal ID
-$company = $client->companies->byId(12345);
+$company = $client->companies->byOrsrId('427482')->get();
 ```
+
+Companies are always identified by IČO or ORSR ID — the SDK does not expose
+internal numeric database identifiers.
+
+#### The `Company` object
+
+`get()` returns a typed, read-only `FirmApi\Objects\Company` value object with
+IDE-friendly accessors and `FirmApi\Support\Collection` lists — no Laravel/
+Illuminate dependency required. It also implements `ArrayAccess`, so existing
+`$company['data']['ico']` code keeps working.
+
+```php
+$company = $client->companies->byIco('51636549')->get();
+
+$company->ico;                 // '51636549'
+$company->name;                // 'Version Two s. r. o.'
+$company->address->city;       // nested Address value object
+$company->address->formatted();
+
+// Collections of typed nested objects
+foreach ($company->shareholders as $s) {
+    echo $s->name . ' — ' . $s->sharePercentage;
+}
+$company->statutoryBody->first()->role;   // 'konateľ'
+$company->businessActivities->pluck('activity');
+
+// Metadata
+$company->meta->stale;         // bool (true = a refresh is queued)
+$company->meta->source;
+
+// Enrichment scopes (tax, sanctions, financials, ...) are plan- and
+// scope-dependent, so they are reached generically rather than mistyped:
+if ($company->has('sanctions')) {
+    $hits = $company->enrichment('sanctions');
+}
+
+// Backward-compatible raw access
+$company['data']['ico'];
+$company->toArray();           // the full { data, meta } array
+```
+
+#### Enrichment scopes
+
+Base lookups return core registry data. Request additional datasets with the
+fluent `withX()` helpers (each maps to an API `scope`, subject to your plan's
+features). Chain as many as you need, then call `get()`:
+
+```php
+$company = $client->companies->byIco('51636549')
+    ->withTax()
+    ->withFinancials()
+    ->withSanctions()
+    ->get();
+
+// Everything your plan is entitled to
+$company = $client->companies->byIco('51636549')->withAll()->get();
+```
+
+Available scope helpers:
+
+`withTax()`, `withBankAccounts()`, `withContacts()`, `withFinancials()`,
+`withDebtorStatus()`, `withFinancialStatements()`, `withInsolvency()`,
+`withCommercialBulletin()`, `withPublicContracts()`, `withProcurement()`,
+`withExecutionAuthorizations()`, `withRpvs()`, `withNbs()`,
+`withTaxReliability()`, `withErasedVat()`, `withReges()`,
+`withSocialEnterprise()`, `withGleif()`, `withSanctions()`, `withTedTenders()`,
+`withReplikAdministrator()`, `withSbs()`, `withTransportLicence()`,
+`withUtilityLicence()`, `withContractingAuthority()`, `withDebarred()`,
+`withUvoReferences()`, `withFsImports()`, `withIllegalEmployment()`,
+`withCourtDecisions()`, `withEmployerHeadcount()`, `withSoiTravelAgency()`,
+`withSvpsEstablishments()`, `withCrpProjects()`,
+`withTradeLicenseActivities()`, `withAll()`.
+
+`with(string ...$scopes)` is an escape hatch for passing raw scope tokens
+directly, e.g. `->with('tax', 'sanctions')`.
 
 ### Search
 
@@ -100,8 +212,8 @@ $results = $client->search->autocomplete('version', limit: 10);
 // Search by name
 $results = $client->search->byName('Version Two');
 
-// Search by name (exact match)
-$results = $client->search->byName('Version Two s. r. o.', exact: true);
+// Search by name (exact match, with pagination)
+$results = $client->search->byName('Version Two s. r. o.', exact: true, limit: 10, offset: 0);
 
 // Search by partial IČO
 $results = $client->search->byIco('5163');
@@ -154,7 +266,7 @@ use FirmApi\Exceptions\RateLimitException;
 use FirmApi\Exceptions\ValidationException;
 
 try {
-    $company = $client->companies->byIco('51636549');
+    $company = $client->companies->byIco('51636549')->get();
 } catch (AuthenticationException $e) {
     // Invalid API key (401)
 } catch (RateLimitException $e) {
@@ -164,7 +276,7 @@ try {
     // Invalid parameters (422)
     $e->getErrors(); // ['field' => ['error message']]
 } catch (ApiException $e) {
-    // Other API errors (403, 404, 500, etc.)
+    // Other API errors (403, 404, 500, malformed response, network, etc.)
 }
 ```
 
@@ -175,6 +287,18 @@ API rate limits depend on your subscription tier. See [pricing](https://firmapi.
 Rate limit headers are included in all responses:
 - `X-RateLimit-Limit-Minute` / `X-RateLimit-Remaining-Minute`
 - `X-RateLimit-Limit-Daily` / `X-RateLimit-Remaining-Daily`
+
+## Upgrading from v1.x
+
+v2.0 is a behavior/API change:
+
+- **Fast by default.** Lookups no longer block waiting for a background refresh.
+  If you relied on the old auto-wait, call `->fresh()` per query, or set
+  `waitForFreshData: true` (constructor) / `FIRMAPI_WAIT_FOR_FRESH_DATA=true`.
+- **`Companies::byId(int $id)` was removed.** Use `byIco()` or `byOrsrId()`.
+- **Transient retries added.** 5xx/network errors are retried (`maxRetries`,
+  default 2); 429 still raises `RateLimitException`.
+- **Malformed responses now throw** `ApiException` instead of returning `[]`.
 
 ## License
 

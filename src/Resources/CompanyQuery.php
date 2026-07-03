@@ -5,17 +5,52 @@ declare(strict_types=1);
 namespace FirmApi\Resources;
 
 use FirmApi\Client;
+use FirmApi\Objects\Company;
 
 class CompanyQuery
 {
+    /** @var list<string> */
     private array $scopes = [];
 
     public function __construct(
         private Client $client,
         private string $path,
-        private bool $waitForFreshData = true,
+        private bool $waitForFreshData = false,
         private int $maxStaleRetries = 3,
     ) {}
+
+    /**
+     * Opt THIS query into waiting for a completed background refresh.
+     *
+     * By default the SDK returns the API's immediately-available (precomputed)
+     * data even when `meta.stale` is set -- that data is valid; the flag only
+     * means a refresh is queued. Call fresh() when you specifically need the
+     * post-refresh values and can tolerate the added latency (and the extra
+     * billed re-poll requests).
+     *
+     * @param int|null $maxRetries Override the number of re-polls for this query.
+     */
+    public function fresh(?int $maxRetries = null): static
+    {
+        $this->waitForFreshData = true;
+        if ($maxRetries !== null) {
+            $this->maxStaleRetries = max(0, $maxRetries);
+        }
+        return $this;
+    }
+
+    /**
+     * Add one or more raw scope tokens (e.g. with('tax', 'sanctions')).
+     * Prefer the typed withX() helpers; this is an escape hatch for scopes
+     * added to the API before a matching helper ships.
+     */
+    public function with(string ...$scopes): static
+    {
+        foreach ($scopes as $scope) {
+            $this->scopes[] = $scope;
+        }
+        return $this;
+    }
 
     public function withTax(): static
     {
@@ -221,6 +256,12 @@ class CompanyQuery
         return $this;
     }
 
+    public function withTradeLicenseActivities(): static
+    {
+        $this->scopes[] = 'trade_license_activities';
+        return $this;
+    }
+
     public function withAll(): static
     {
         $this->scopes = ['all'];
@@ -228,11 +269,12 @@ class CompanyQuery
     }
 
     /**
-     * Execute the query and return the company data.
+     * Execute the query and return the company as a typed value object.
      *
-     * @return array<string, mixed>
+     * The result is also array-accessible for backward compatibility, so
+     * $company['data']['ico'] keeps working alongside $company->ico.
      */
-    public function get(): array
+    public function get(): Company
     {
         $fullPath = $this->path;
         if (!empty($this->scopes)) {
@@ -241,8 +283,14 @@ class CompanyQuery
 
         $response = $this->client->get($fullPath);
 
-        return $this->resolveStaleResponse($response, $fullPath);
+        return Company::fromResponse($this->resolveStaleResponse($response, $fullPath));
     }
+
+    /**
+     * Total wall-clock budget (seconds) for the opt-in fresh-data wait, across
+     * all re-polls, so fresh() can never block a caller for minutes.
+     */
+    private const MAX_TOTAL_WAIT_SECONDS = 120;
 
     private function resolveStaleResponse(array $response, string $path): array
     {
@@ -250,11 +298,18 @@ class CompanyQuery
             return $response;
         }
 
+        $spent = 0;
+
         for ($attempt = 0; $attempt < $this->maxStaleRetries; $attempt++) {
             $waitSeconds = $this->calculateWaitSeconds($response['meta']['retry_at'] ?? null);
 
+            if ($spent + $waitSeconds > self::MAX_TOTAL_WAIT_SECONDS) {
+                break;
+            }
+
             if ($waitSeconds > 0) {
                 sleep($waitSeconds);
+                $spent += $waitSeconds;
             }
 
             $response = $this->client->get($path);

@@ -14,6 +14,7 @@ use FirmApi\Resources\Batch;
 use FirmApi\Resources\Account;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Exception\BadResponseException;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
 
 class Client
@@ -27,26 +28,48 @@ class Client
     private string $apiKey;
     private string $baseUrl;
 
+    private bool $waitForFreshData;
+    private int $maxStaleRetries;
+    private int $maxRetries;
+
     public readonly Companies $companies;
     public readonly Search $search;
     public readonly Batch $batch;
     public readonly Account $account;
 
-    private bool $waitForFreshData;
-    private int $maxStaleRetries;
-
+    /**
+     * @param string          $apiKey          Your FirmAPI key (Bearer token).
+     * @param string|null     $baseUrl         Override the API base URL (staging/self-hosted).
+     * @param int             $timeout         Per-request HTTP timeout in seconds.
+     * @param HttpClient|null $httpClient      Inject a preconfigured Guzzle client (tests).
+     * @param bool            $waitForFreshData Opt-in: block and re-poll until the API reports
+     *                                         non-stale data. Default FALSE -- the API already
+     *                                         returns valid, precomputed data immediately and
+     *                                         flags `meta.stale` only to signal that a background
+     *                                         refresh is queued. Waiting trades multiple seconds
+     *                                         of latency (and extra billed requests) for a
+     *                                         marginal freshness gain, so it is off by default;
+     *                                         opt in per call with CompanyQuery::fresh() instead.
+     * @param int             $maxStaleRetries Max re-polls when waiting for fresh data.
+     * @param int             $maxRetries      Automatic retries for transient failures (HTTP 5xx
+     *                                         and network errors) with exponential backoff.
+     *                                         HTTP 429 is never silently retried -- it surfaces
+     *                                         as RateLimitException so the caller controls pacing.
+     */
     public function __construct(
         string $apiKey,
         ?string $baseUrl = null,
         int $timeout = self::DEFAULT_TIMEOUT,
         ?HttpClient $httpClient = null,
-        bool $waitForFreshData = true,
+        bool $waitForFreshData = false,
         int $maxStaleRetries = 3,
+        int $maxRetries = 2,
     ) {
         $this->apiKey = $apiKey;
         $this->baseUrl = rtrim($baseUrl ?? self::DEFAULT_BASE_URL, '/');
         $this->waitForFreshData = $waitForFreshData;
-        $this->maxStaleRetries = $maxStaleRetries;
+        $this->maxStaleRetries = max(0, $maxStaleRetries);
+        $this->maxRetries = max(0, $maxRetries);
 
         $this->http = $httpClient ?? new HttpClient([
             'base_uri' => $this->baseUrl . '/',
@@ -109,7 +132,9 @@ class Client
     }
 
     /**
-     * Make a request to the API.
+     * Make a request to the API, retrying transient failures (5xx / network)
+     * with exponential backoff. 4xx responses (including 429) are never retried;
+     * they map straight to typed exceptions.
      *
      * @param string $method
      * @param string $endpoint
@@ -119,24 +144,76 @@ class Client
      */
     private function request(string $method, string $endpoint, array $options = []): array
     {
-        try {
-            $response = $this->http->request($method, ltrim($endpoint, '/'), $options);
-            $body = (string) $response->getBody();
+        $attempt = 0;
 
-            return json_decode($body, true) ?? [];
-        } catch (BadResponseException $e) {
-            $this->handleResponseException($e);
-        } catch (GuzzleException $e) {
-            throw new ApiException(
-                'Network error: ' . $e->getMessage(),
-                0,
-                $e
-            );
+        while (true) {
+            try {
+                $response = $this->http->request($method, ltrim($endpoint, '/'), $options);
+
+                return $this->decode((string) $response->getBody());
+            } catch (BadResponseException $e) {
+                $status = $e->getResponse()->getStatusCode();
+
+                // Retry only server-side transient failures, never 4xx.
+                if ($status >= 500 && $attempt < $this->maxRetries) {
+                    $this->backoff($attempt++);
+                    continue;
+                }
+
+                $this->handleResponseException($e);
+            } catch (ConnectException $e) {
+                // Connection/DNS/timeout: transient, safe to retry.
+                if ($attempt < $this->maxRetries) {
+                    $this->backoff($attempt++);
+                    continue;
+                }
+
+                throw new ApiException('Network error: ' . $e->getMessage(), 0, $e);
+            } catch (GuzzleException $e) {
+                throw new ApiException('Network error: ' . $e->getMessage(), 0, $e);
+            }
         }
     }
 
     /**
-     * Handle HTTP response exceptions (4xx and 5xx).
+     * Decode a JSON response body, failing loudly on malformed payloads instead
+     * of silently returning an empty array (which hides HTML error pages and
+     * truncated responses from the caller).
+     *
+     * @return array<string, mixed>
+     * @throws ApiException
+     */
+    private function decode(string $body): array
+    {
+        if (trim($body) === '') {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new ApiException('Malformed JSON response from API: ' . $e->getMessage(), 0, $e);
+        }
+
+        if (!is_array($decoded)) {
+            throw new ApiException('Unexpected non-object JSON response from API.');
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Sleep for an exponential backoff interval (0.25s, 0.5s, 1s, ... capped at 5s)
+     * before the next transient-failure retry.
+     */
+    private function backoff(int $attempt): void
+    {
+        $micros = (int) min(5_000_000, 250_000 * (2 ** $attempt));
+        usleep($micros);
+    }
+
+    /**
+     * Handle HTTP response exceptions (4xx and non-retried 5xx).
      *
      * @param BadResponseException $e
      * @throws ApiException

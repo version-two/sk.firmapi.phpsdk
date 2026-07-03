@@ -20,6 +20,9 @@ class FirmApiServiceProvider extends ServiceProvider
                 apiKey: $config['api_key'] ?? '',
                 baseUrl: $config['base_url'] ?? null,
                 timeout: $config['timeout'] ?? 30,
+                waitForFreshData: $config['wait_for_fresh_data'] ?? false,
+                maxStaleRetries: $config['max_stale_retries'] ?? 3,
+                maxRetries: $config['max_retries'] ?? 2,
             );
         });
 

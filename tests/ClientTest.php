@@ -200,9 +200,13 @@ class ClientTest extends TestCase
         $client->get('/test');
     }
 
-    public function test_500_throws_api_exception_with_status_code(): void
+    public function test_500_throws_api_exception_after_retries_exhausted(): void
     {
+        // 5xx is transient and retried (default maxRetries=2 => 3 attempts total);
+        // once exhausted it surfaces as an ApiException with the status code.
         $client = $this->createClient([
+            $this->jsonResponse(['error' => 'Internal server error'], 500),
+            $this->jsonResponse(['error' => 'Internal server error'], 500),
             $this->jsonResponse(['error' => 'Internal server error'], 500),
         ]);
 
@@ -213,19 +217,67 @@ class ClientTest extends TestCase
             $this->assertSame(500, $e->getCode());
             $this->assertStringNotContainsString('Network error', $e->getMessage());
         }
+
+        $this->assertCount(3, $this->requestHistory, '5xx must be retried up to maxRetries');
     }
 
-    public function test_network_error_throws_api_exception(): void
+    public function test_5xx_is_retried_then_succeeds(): void
     {
         $client = $this->createClient([
-            new \GuzzleHttp\Exception\ConnectException(
-                'Connection refused',
-                new \GuzzleHttp\Psr7\Request('GET', '/test')
-            ),
+            $this->jsonResponse(['error' => 'Bad gateway'], 502),
+            $this->jsonResponse(['data' => ['ico' => '51636549']]),
         ]);
+
+        $result = $client->get('/test');
+
+        $this->assertSame('51636549', $result['data']['ico']);
+        $this->assertCount(2, $this->requestHistory);
+    }
+
+    public function test_429_is_not_retried(): void
+    {
+        // Rate limiting must surface immediately (with Retry-After) rather than
+        // being silently retried, so the caller controls pacing.
+        $client = $this->createClient([
+            $this->jsonResponse(['error' => 'Too many requests'], 429),
+            $this->jsonResponse(['data' => ['ico' => '51636549']]),
+        ]);
+
+        try {
+            $client->get('/test');
+            $this->fail('Expected RateLimitException');
+        } catch (\FirmApi\Exceptions\RateLimitException $e) {
+            $this->assertSame(429, $e->getCode());
+        }
+
+        $this->assertCount(1, $this->requestHistory, '429 must not be retried');
+    }
+
+    public function test_network_error_throws_api_exception_after_retries(): void
+    {
+        $mkError = fn () => new \GuzzleHttp\Exception\ConnectException(
+            'Connection refused',
+            new \GuzzleHttp\Psr7\Request('GET', '/test')
+        );
+
+        $client = $this->createClient([$mkError(), $mkError(), $mkError()]);
 
         $this->expectException(ApiException::class);
         $this->expectExceptionMessage('Network error: Connection refused');
+
+        $client->get('/test');
+    }
+
+    public function test_malformed_json_throws_api_exception(): void
+    {
+        // A non-JSON body (e.g. an HTML error page) must fail loudly, not be
+        // silently coerced into an empty array.
+        $client = $this->createClient([
+            new Response(200, ['Content-Type' => 'application/json'], '<html>gateway error</html>'),
+        ]);
+
+        $this->expectException(ApiException::class);
+        $this->expectExceptionMessage('Malformed JSON response');
 
         $client->get('/test');
     }
