@@ -24,10 +24,18 @@ class Client
     private const SANDBOX_API_KEY = 'fa_sandbox_test_key_firmapi_sk_2026';
     private const DEFAULT_TIMEOUT = 30;
 
+    /**
+     * Plain-PHP sandbox switch: `define('FIRMAPI_SANDBOX', true);` before creating
+     * a client forces sandbox mode without passing anything to the constructor.
+     * (In Laravel use the FIRMAPI_SANDBOX env var; anywhere use Client::sandbox().)
+     */
+    public const SANDBOX_CONSTANT = 'FIRMAPI_SANDBOX';
+
     private HttpClient $http;
     private string $apiKey;
     private string $baseUrl;
 
+    public readonly bool $sandbox;
     private bool $waitForFreshData;
     private int $maxStaleRetries;
     private int $maxRetries;
@@ -55,6 +63,11 @@ class Client
      *                                         and network errors) with exponential backoff.
      *                                         HTTP 429 is never silently retried -- it surfaces
      *                                         as RateLimitException so the caller controls pacing.
+     * @param bool|null       $sandbox         Force sandbox mode on/off. When null (default) it is
+     *                                         auto-enabled if the FIRMAPI_SANDBOX constant is defined
+     *                                         and truthy. In sandbox mode the base URL and API key are
+     *                                         overridden with the public sandbox endpoint/key (no real
+     *                                         key needed, demo data, no rate limits).
      */
     public function __construct(
         string $apiKey,
@@ -64,7 +77,17 @@ class Client
         bool $waitForFreshData = false,
         int $maxStaleRetries = 3,
         int $maxRetries = 2,
+        ?bool $sandbox = null,
     ) {
+        // Plain-PHP switch: define('FIRMAPI_SANDBOX', true) enables sandbox with no
+        // constructor args. An explicit $sandbox argument always wins over the constant.
+        $this->sandbox = $sandbox ?? (defined(self::SANDBOX_CONSTANT) && constant(self::SANDBOX_CONSTANT));
+
+        if ($this->sandbox) {
+            $apiKey = self::SANDBOX_API_KEY;
+            $baseUrl = self::SANDBOX_BASE_URL;
+        }
+
         $this->apiKey = $apiKey;
         $this->baseUrl = rtrim($baseUrl ?? self::DEFAULT_BASE_URL, '/');
         $this->waitForFreshData = $waitForFreshData;
@@ -95,7 +118,7 @@ class Client
     {
         return new static(
             apiKey: self::SANDBOX_API_KEY,
-            baseUrl: self::SANDBOX_BASE_URL,
+            sandbox: true,
         );
     }
 

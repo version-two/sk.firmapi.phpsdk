@@ -72,11 +72,30 @@ $client = new Client(
     waitForFreshData: false,              // block/re-poll until non-stale (opt-in)
     maxStaleRetries: 3,                   // re-polls when waiting for fresh data
     maxRetries: 2,                        // retries for transient 5xx/network errors
+    sandbox: null,                        // null = auto (FIRMAPI_SANDBOX constant); true/false to force
 );
-
-// Sandbox client (no key required, demo data, no rate limits)
-$sandbox = Client::sandbox();
 ```
+
+#### Sandbox mode
+
+The sandbox needs no API key, returns demo data, and has no rate limits. Enable
+it any of three ways:
+
+```php
+// 1. Explicit factory (or constructor flag)
+$client = Client::sandbox();
+$client = new Client('ignored', sandbox: true);
+
+// 2. Plain-PHP constant - define it before constructing the client
+define('FIRMAPI_SANDBOX', true);
+$client = new Client('ignored');   // auto-detected -> sandbox
+
+// 3. Laravel: set FIRMAPI_SANDBOX=true in .env (see below)
+```
+
+When sandbox is active the base URL and key are overridden with the built-in
+sandbox endpoint automatically, so any key you pass is ignored. An explicit
+`sandbox: true|false` argument always wins over the constant.
 
 Transient failures (HTTP 5xx and network errors) are retried automatically with
 exponential backoff, up to `maxRetries`. HTTP 429 is **not** retried — it is
@@ -96,6 +115,9 @@ FIRMAPI_TIMEOUT=30
 FIRMAPI_WAIT_FOR_FRESH_DATA=false
 FIRMAPI_MAX_STALE_RETRIES=3
 FIRMAPI_MAX_RETRIES=2
+
+# Set true to use the sandbox (no key needed, demo data, no rate limits)
+FIRMAPI_SANDBOX=false
 ```
 
 Optionally publish the config file:

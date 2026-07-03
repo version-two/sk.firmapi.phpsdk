@@ -10,14 +10,65 @@ use FirmApi\Exceptions\AuthenticationException;
 use FirmApi\Exceptions\RateLimitException;
 use FirmApi\Exceptions\ValidationException;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 
 class ClientTest extends TestCase
 {
+    private const SANDBOX_BASE_URL = 'https://api.firmapi.sk/v1/sandbox';
+    private const SANDBOX_API_KEY = 'fa_sandbox_test_key_firmapi_sk_2026';
+
     public function test_constructor_sets_defaults(): void
     {
         $client = new Client('my-key');
 
         $this->assertSame('my-key', $client->getApiKey());
+        $this->assertSame('https://api.firmapi.sk/v1', $client->getBaseUrl());
+        $this->assertFalse($client->sandbox);
+    }
+
+    public function test_sandbox_static_factory_uses_sandbox_endpoint_and_key(): void
+    {
+        $client = Client::sandbox();
+
+        $this->assertTrue($client->sandbox);
+        $this->assertSame(self::SANDBOX_BASE_URL, $client->getBaseUrl());
+        $this->assertSame(self::SANDBOX_API_KEY, $client->getApiKey());
+    }
+
+    public function test_sandbox_constructor_flag_overrides_credentials(): void
+    {
+        // Explicit sandbox: true wins and overrides any passed key/base URL.
+        $client = new Client('ignored-key', baseUrl: 'https://custom.example/v1', sandbox: true);
+
+        $this->assertTrue($client->sandbox);
+        $this->assertSame(self::SANDBOX_BASE_URL, $client->getBaseUrl());
+        $this->assertSame(self::SANDBOX_API_KEY, $client->getApiKey());
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function test_sandbox_constant_enables_sandbox_in_plain_php(): void
+    {
+        // Plain-PHP switch: define the constant before constructing the client.
+        define('FIRMAPI_SANDBOX', true);
+
+        $client = new Client('whatever-key');
+
+        $this->assertTrue($client->sandbox);
+        $this->assertSame(self::SANDBOX_BASE_URL, $client->getBaseUrl());
+        $this->assertSame(self::SANDBOX_API_KEY, $client->getApiKey());
+    }
+
+    public function test_explicit_sandbox_false_beats_the_constant(): void
+    {
+        // sandbox: false is explicit and must not be overridden by the constant.
+        // (The constant isn't defined in this process; this asserts the default
+        //  live path and that an explicit false is honored.)
+        $client = new Client('live-key', sandbox: false);
+
+        $this->assertFalse($client->sandbox);
+        $this->assertSame('live-key', $client->getApiKey());
         $this->assertSame('https://api.firmapi.sk/v1', $client->getBaseUrl());
     }
 

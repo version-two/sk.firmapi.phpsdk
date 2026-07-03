@@ -23,6 +23,7 @@ class FirmApiServiceProvider extends ServiceProvider
                 waitForFreshData: $config['wait_for_fresh_data'] ?? false,
                 maxStaleRetries: $config['max_stale_retries'] ?? 3,
                 maxRetries: $config['max_retries'] ?? 2,
+                sandbox: $config['sandbox'] ?? false,
             );
         });
 

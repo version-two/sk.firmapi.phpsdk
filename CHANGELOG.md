@@ -34,6 +34,10 @@ Breaking changes to defaults and surface, plus reliability fixes.
   it raises `RateLimitException`.
 - Laravel config keys `wait_for_fresh_data`, `max_stale_retries`, `max_retries`
   (with matching `FIRMAPI_*` env vars), now passed through to the client.
+- Sandbox can now be enabled three ways: `Client::sandbox()`, the
+  `sandbox: true` constructor argument, the `FIRMAPI_SANDBOX` env var (Laravel
+  config `sandbox`), or by defining the `FIRMAPI_SANDBOX` constant in plain PHP.
+  A read-only `$client->sandbox` flag exposes the resolved mode.
 
 ### Fixed
 - Malformed / non-JSON responses now raise `ApiException` instead of being

@@ -77,4 +77,19 @@ return [
 
     'max_retries' => (int) env('FIRMAPI_MAX_RETRIES', 2),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sandbox mode
+    |--------------------------------------------------------------------------
+    |
+    | When true, the client targets the public sandbox endpoint with the
+    | built-in sandbox key: no real API key required, demo data, no rate
+    | limits. Flip FIRMAPI_SANDBOX=true in your .env to test an integration,
+    | then set it back to false for production. (Equivalent to Client::sandbox()
+    | in plain PHP, or defining the FIRMAPI_SANDBOX constant.)
+    |
+    */
+
+    'sandbox' => (bool) env('FIRMAPI_SANDBOX', false),
+
 ];
