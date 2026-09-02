@@ -82,6 +82,18 @@ class CompaniesTest extends TestCase
         $this->assertStringContainsString('scope=tax,sanctions', urldecode($this->lastRequestUri()));
     }
 
+    public function test_with_orsr_adds_scope_to_request(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '51636549', 'shareholders' => [], 'statutory_body' => []]]),
+        ]);
+
+        $client->companies->byIco('51636549')->withOrsr()->get();
+
+        $this->assertStringContainsString('scope=orsr', $this->lastRequestUri());
+        $this->assertSame('GET', $this->lastRequestMethod());
+    }
+
     public function test_with_crp_projects_adds_scope_to_request(): void
     {
         $client = $this->createClient([

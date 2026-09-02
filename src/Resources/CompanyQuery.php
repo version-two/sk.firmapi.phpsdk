@@ -52,6 +52,12 @@ class CompanyQuery
         return $this;
     }
 
+    public function withOrsr(): static
+    {
+        $this->scopes[] = 'orsr';
+        return $this;
+    }
+
     public function withTax(): static
     {
         $this->scopes[] = 'tax';
