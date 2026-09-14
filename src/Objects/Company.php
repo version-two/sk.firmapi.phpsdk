@@ -29,6 +29,7 @@ final class Company implements ArrayAccess, JsonSerializable
      * @param array<string, mixed>          $data          The `data` payload.
      * @param Collection<BusinessActivity>  $businessActivities
      * @param Collection<Shareholder>       $shareholders
+     * @param Collection<OtherStakeholder>  $otherStakeholders
      * @param Collection<StatutoryBody>     $statutoryBody
      */
     private function __construct(
@@ -47,6 +48,7 @@ final class Company implements ArrayAccess, JsonSerializable
         public readonly ?string $registeredCapital,
         public readonly Collection $businessActivities,
         public readonly Collection $shareholders,
+        public readonly Collection $otherStakeholders,
         public readonly Collection $statutoryBody,
         public readonly Meta $meta,
     ) {
@@ -80,6 +82,7 @@ final class Company implements ArrayAccess, JsonSerializable
             registeredCapital: $data['registered_capital'] ?? null,
             businessActivities: self::mapList($data['business_activities'] ?? [], BusinessActivity::fromArray(...)),
             shareholders: self::mapList($data['shareholders'] ?? [], Shareholder::fromArray(...)),
+            otherStakeholders: self::mapList($data['other_stakeholders'] ?? [], OtherStakeholder::fromArray(...)),
             statutoryBody: self::mapList($data['statutory_body'] ?? [], StatutoryBody::fromArray(...)),
             meta: Meta::fromArray($meta),
         );

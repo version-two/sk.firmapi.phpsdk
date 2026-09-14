@@ -160,7 +160,10 @@ class CompaniesTest extends TestCase
                     ],
                     'orsr_id' => '427482',
                     'shareholders' => [
-                        ['name' => 'Ján Kováč', 'share_amount' => '5000', 'is_company' => false],
+                        ['name' => 'Ján Kováč', 'share_amount' => '5000', 'is_company' => false, 'stakeholder_type' => 'Spoločník v.o.s. / s.r.o.', 'effective_from' => '2018-01-01', 'effective_to' => null, 'current' => true],
+                    ],
+                    'other_stakeholders' => [
+                        ['name' => 'Eva Dozorná', 'is_company' => false, 'stakeholder_type' => 'Člen dozorného orgánu', 'effective_from' => '2016-04-09', 'effective_to' => '2020-12-08', 'current' => false],
                     ],
                     'statutory_body' => [
                         ['name' => 'Ján Kováč', 'role' => 'konateľ'],
@@ -186,6 +189,12 @@ class CompaniesTest extends TestCase
         $this->assertCount(1, $company->shareholders);
         $this->assertSame('Ján Kováč', $company->shareholders->first()->name);
         $this->assertFalse($company->shareholders->first()->isCompany);
+        $this->assertSame('Spoločník v.o.s. / s.r.o.', $company->shareholders->first()->stakeholderType);
+        $this->assertTrue($company->shareholders->first()->current);
+        $this->assertCount(1, $company->otherStakeholders);
+        $this->assertSame('Člen dozorného orgánu', $company->otherStakeholders->first()->stakeholderType);
+        $this->assertSame('2020-12-08', $company->otherStakeholders->first()->effectiveTo);
+        $this->assertFalse($company->otherStakeholders->first()->current);
         $this->assertSame('konateľ', $company->statutoryBody->first()->role);
         $this->assertSame('Kúpa tovaru', $company->businessActivities->first()->activity);
 

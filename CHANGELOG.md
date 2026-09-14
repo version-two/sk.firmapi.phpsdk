@@ -2,6 +2,18 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.2.0
+
+- `Shareholder` gained `stakeholderType`, `effectiveFrom`, `effectiveTo` and `current`
+  (API v1.19.0). `shareholders` now holds equity holders only.
+- New `Company::$otherStakeholders` collection of `OtherStakeholder` objects – supervisory
+  board members, procurators, liquidators, administrators and other registered persons
+  without a stake (API `other_stakeholders`).
+
+## v2.1.0
+
+- `CompanyQuery::withOrsr()` scope helper.
+
 ## v2.0.0
 
 Breaking changes to defaults and surface, plus reliability fixes.
