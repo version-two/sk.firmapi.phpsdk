@@ -5,26 +5,23 @@ declare(strict_types=1);
 namespace FirmApi\Objects;
 
 /**
- * An equity holder. Mirrors the API's `shareholders[]` entries
- * ({name, address, share_amount, share_paid, share_currency, share_percentage,
- * contribution_kind, deposit_lien, function, is_company, ico, stakeholder_type,
- * effective_from, effective_to, current}).
+ * A person or company registered in one of the company's bodies. Mirrors
+ * the entries of `supervisory_board[]`, `procurators[]`, `liquidators[]`,
+ * `administrators[]`, `founders[]`, `branch_heads[]`, `legal_predecessors[]`
+ * and `other_stakeholders[]` ({name, address, is_company, ico,
+ * stakeholder_type, function, acting_method, effective_from, effective_to,
+ * current}).
  */
-final class Shareholder implements \JsonSerializable
+final class RegisteredPerson implements \JsonSerializable
 {
     public function __construct(
         public readonly ?string $name = null,
         public readonly ?string $address = null,
-        public readonly ?string $shareAmount = null,
-        public readonly ?string $sharePaid = null,
-        public readonly ?string $shareCurrency = null,
-        public readonly ?string $sharePercentage = null,
-        public readonly ?string $contributionKind = null,
-        public readonly ?string $depositLien = null,
-        public readonly ?string $function = null,
         public readonly ?bool $isCompany = null,
         public readonly ?string $ico = null,
         public readonly ?string $stakeholderType = null,
+        public readonly ?string $function = null,
+        public readonly ?string $actingMethod = null,
         public readonly ?string $effectiveFrom = null,
         public readonly ?string $effectiveTo = null,
         public readonly ?bool $current = null,
@@ -37,16 +34,11 @@ final class Shareholder implements \JsonSerializable
         return new self(
             name: $data['name'] ?? null,
             address: $data['address'] ?? null,
-            shareAmount: $data['share_amount'] ?? null,
-            sharePaid: $data['share_paid'] ?? null,
-            shareCurrency: $data['share_currency'] ?? null,
-            sharePercentage: $data['share_percentage'] ?? null,
-            contributionKind: $data['contribution_kind'] ?? null,
-            depositLien: $data['deposit_lien'] ?? null,
-            function: $data['function'] ?? null,
             isCompany: isset($data['is_company']) ? (bool) $data['is_company'] : null,
             ico: $data['ico'] ?? null,
             stakeholderType: $data['stakeholder_type'] ?? null,
+            function: $data['function'] ?? null,
+            actingMethod: $data['acting_method'] ?? null,
             effectiveFrom: $data['effective_from'] ?? null,
             effectiveTo: $data['effective_to'] ?? null,
             current: isset($data['current']) ? (bool) $data['current'] : null,
@@ -59,16 +51,11 @@ final class Shareholder implements \JsonSerializable
         return [
             'name' => $this->name,
             'address' => $this->address,
-            'share_amount' => $this->shareAmount,
-            'share_paid' => $this->sharePaid,
-            'share_currency' => $this->shareCurrency,
-            'share_percentage' => $this->sharePercentage,
-            'contribution_kind' => $this->contributionKind,
-            'deposit_lien' => $this->depositLien,
-            'function' => $this->function,
             'is_company' => $this->isCompany,
             'ico' => $this->ico,
             'stakeholder_type' => $this->stakeholderType,
+            'function' => $this->function,
+            'acting_method' => $this->actingMethod,
             'effective_from' => $this->effectiveFrom,
             'effective_to' => $this->effectiveTo,
             'current' => $this->current,

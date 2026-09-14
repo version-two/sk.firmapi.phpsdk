@@ -173,9 +173,15 @@ $company->address->formatted();
 
 // Collections of typed nested objects
 foreach ($company->shareholders as $s) {
-    echo $s->name . ' — ' . $s->sharePercentage;
+    echo $s->name . ' – ' . $s->sharePercentage . ' % (' . $s->shareAmount . ' ' . $s->shareCurrency . ')';
 }
-$company->statutoryBody->first()->role;   // 'konateľ'
+$company->statutoryBody->first()->role;       // 'predseda predstavenstva'
+$company->statutoryBody->first()->function;   // 'chairman' | 'vice_chairman' | 'member' | null
+$company->statutoryBody->first()->bodyType;   // 'predstavenstvo'
+$company->supervisoryBoard->first()->function;
+$company->procurators->first()->actingMethod;
+$company->legalPredecessors->first()->ico;
+$company->shares->first()->count;             // share issues of joint-stock companies
 $company->businessActivities->pluck('activity');
 
 // Metadata

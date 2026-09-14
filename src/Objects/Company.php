@@ -29,8 +29,16 @@ final class Company implements ArrayAccess, JsonSerializable
      * @param array<string, mixed>          $data          The `data` payload.
      * @param Collection<BusinessActivity>  $businessActivities
      * @param Collection<Shareholder>       $shareholders
-     * @param Collection<OtherStakeholder>  $otherStakeholders
      * @param Collection<StatutoryBody>     $statutoryBody
+     * @param Collection<RegisteredPerson>  $supervisoryBoard
+     * @param Collection<RegisteredPerson>  $procurators
+     * @param Collection<RegisteredPerson>  $liquidators
+     * @param Collection<RegisteredPerson>  $administrators
+     * @param Collection<RegisteredPerson>  $founders
+     * @param Collection<RegisteredPerson>  $branchHeads
+     * @param Collection<RegisteredPerson>  $legalPredecessors
+     * @param Collection<RegisteredPerson>  $otherStakeholders
+     * @param Collection<ShareIssue>        $shares
      */
     private function __construct(
         private readonly array $raw,
@@ -48,8 +56,16 @@ final class Company implements ArrayAccess, JsonSerializable
         public readonly ?string $registeredCapital,
         public readonly Collection $businessActivities,
         public readonly Collection $shareholders,
-        public readonly Collection $otherStakeholders,
         public readonly Collection $statutoryBody,
+        public readonly Collection $supervisoryBoard,
+        public readonly Collection $procurators,
+        public readonly Collection $liquidators,
+        public readonly Collection $administrators,
+        public readonly Collection $founders,
+        public readonly Collection $branchHeads,
+        public readonly Collection $legalPredecessors,
+        public readonly Collection $otherStakeholders,
+        public readonly Collection $shares,
         public readonly Meta $meta,
     ) {
     }
@@ -82,8 +98,16 @@ final class Company implements ArrayAccess, JsonSerializable
             registeredCapital: $data['registered_capital'] ?? null,
             businessActivities: self::mapList($data['business_activities'] ?? [], BusinessActivity::fromArray(...)),
             shareholders: self::mapList($data['shareholders'] ?? [], Shareholder::fromArray(...)),
-            otherStakeholders: self::mapList($data['other_stakeholders'] ?? [], OtherStakeholder::fromArray(...)),
             statutoryBody: self::mapList($data['statutory_body'] ?? [], StatutoryBody::fromArray(...)),
+            supervisoryBoard: self::mapList($data['supervisory_board'] ?? [], RegisteredPerson::fromArray(...)),
+            procurators: self::mapList($data['procurators'] ?? [], RegisteredPerson::fromArray(...)),
+            liquidators: self::mapList($data['liquidators'] ?? [], RegisteredPerson::fromArray(...)),
+            administrators: self::mapList($data['administrators'] ?? [], RegisteredPerson::fromArray(...)),
+            founders: self::mapList($data['founders'] ?? [], RegisteredPerson::fromArray(...)),
+            branchHeads: self::mapList($data['branch_heads'] ?? [], RegisteredPerson::fromArray(...)),
+            legalPredecessors: self::mapList($data['legal_predecessors'] ?? [], RegisteredPerson::fromArray(...)),
+            otherStakeholders: self::mapList($data['other_stakeholders'] ?? [], RegisteredPerson::fromArray(...)),
+            shares: self::mapList($data['shares'] ?? [], ShareIssue::fromArray(...)),
             meta: Meta::fromArray($meta),
         );
     }

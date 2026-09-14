@@ -162,11 +162,18 @@ class CompaniesTest extends TestCase
                     'shareholders' => [
                         ['name' => 'Ján Kováč', 'share_amount' => '5000', 'is_company' => false, 'stakeholder_type' => 'Spoločník v.o.s. / s.r.o.', 'effective_from' => '2018-01-01', 'effective_to' => null, 'current' => true],
                     ],
-                    'other_stakeholders' => [
-                        ['name' => 'Eva Dozorná', 'is_company' => false, 'stakeholder_type' => 'Člen dozorného orgánu', 'effective_from' => '2016-04-09', 'effective_to' => '2020-12-08', 'current' => false],
+                    'supervisory_board' => [
+                        ['name' => 'Eva Dozorná', 'is_company' => false, 'stakeholder_type' => 'Člen dozorného orgánu', 'function' => 'chairman', 'effective_from' => '2016-04-09', 'effective_to' => '2020-12-08', 'current' => false],
                     ],
+                    'procurators' => [
+                        ['name' => 'Karol Prokurista', 'is_company' => false, 'stakeholder_type' => 'Prokurista', 'acting_method' => 'Koná samostatne.', 'current' => true],
+                    ],
+                    'other_stakeholders' => [],
                     'statutory_body' => [
-                        ['name' => 'Ján Kováč', 'role' => 'konateľ'],
+                        ['name' => 'Ján Kováč', 'role' => 'konateľ', 'body_type' => 'konatelia', 'effective_from' => '2018-01-01', 'current' => true],
+                    ],
+                    'shares' => [
+                        ['share_type' => 'kmeňové', 'nominal_value' => '1000.00', 'currency' => 'EUR', 'count' => 25, 'current' => true],
                     ],
                     'business_activities' => [
                         ['activity' => 'Kúpa tovaru', 'since' => '2018-01-01'],
@@ -191,11 +198,17 @@ class CompaniesTest extends TestCase
         $this->assertFalse($company->shareholders->first()->isCompany);
         $this->assertSame('Spoločník v.o.s. / s.r.o.', $company->shareholders->first()->stakeholderType);
         $this->assertTrue($company->shareholders->first()->current);
-        $this->assertCount(1, $company->otherStakeholders);
-        $this->assertSame('Člen dozorného orgánu', $company->otherStakeholders->first()->stakeholderType);
-        $this->assertSame('2020-12-08', $company->otherStakeholders->first()->effectiveTo);
-        $this->assertFalse($company->otherStakeholders->first()->current);
+        $this->assertCount(0, $company->otherStakeholders);
+        $this->assertCount(1, $company->supervisoryBoard);
+        $this->assertSame('Člen dozorného orgánu', $company->supervisoryBoard->first()->stakeholderType);
+        $this->assertSame('chairman', $company->supervisoryBoard->first()->function);
+        $this->assertSame('2020-12-08', $company->supervisoryBoard->first()->effectiveTo);
+        $this->assertFalse($company->supervisoryBoard->first()->current);
+        $this->assertSame('Koná samostatne.', $company->procurators->first()->actingMethod);
         $this->assertSame('konateľ', $company->statutoryBody->first()->role);
+        $this->assertSame('konatelia', $company->statutoryBody->first()->bodyType);
+        $this->assertTrue($company->statutoryBody->first()->current);
+        $this->assertSame(25, $company->shares->first()->count);
         $this->assertSame('Kúpa tovaru', $company->businessActivities->first()->activity);
 
         // Meta + generic enrichment access

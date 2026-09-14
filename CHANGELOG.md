@@ -2,6 +2,17 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.3.0
+
+- Registry people split by body (API v1.20.0): new `Company` collections `supervisoryBoard`,
+  `procurators`, `liquidators`, `administrators`, `founders`, `branchHeads`, `legalPredecessors`
+  and `shares`; `otherStakeholders` keeps only persons outside those bodies.
+- New `RegisteredPerson` object (with `function` and, for procurators, `actingMethod`) replaces
+  `OtherStakeholder`, which stays as a deprecated alias.
+- `Shareholder` gained `sharePaid`, `shareCurrency`, `contributionKind`, `depositLien` and `function`.
+- `StatutoryBody` gained `function`, `bodyType`, `appointedAt`, `effectiveFrom`, `effectiveTo` and `current`.
+- New `ShareIssue` object for the `shares` collection.
+
 ## v2.2.0
 
 - `Shareholder` gained `stakeholderType`, `effectiveFrom`, `effectiveTo` and `current`
