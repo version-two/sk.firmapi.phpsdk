@@ -106,6 +106,18 @@ class CompaniesTest extends TestCase
         $this->assertSame('GET', $this->lastRequestMethod());
     }
 
+    public function test_with_itms21_adds_scope_to_request(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '00151866', 'itms21' => ['projects' => ['count' => 49, 'latest' => []], 'irregularities' => ['count' => 0, 'entries' => []]]]]),
+        ]);
+
+        $company = $client->companies->byIco('00151866')->withItms21()->get();
+
+        $this->assertStringContainsString('scope=itms21', $this->lastRequestUri());
+        $this->assertSame(49, $company->enrichment('itms21')['projects']['count']);
+    }
+
     public function test_by_ico_returns_full_company_data(): void
     {
         $companyData = [

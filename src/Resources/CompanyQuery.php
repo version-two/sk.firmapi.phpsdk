@@ -262,6 +262,12 @@ class CompanyQuery
         return $this;
     }
 
+    public function withItms21(): static
+    {
+        $this->scopes[] = 'itms21';
+        return $this;
+    }
+
     public function withTradeLicenseActivities(): static
     {
         $this->scopes[] = 'trade_license_activities';

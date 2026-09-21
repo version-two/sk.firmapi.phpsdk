@@ -2,6 +2,11 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.4.0
+
+- New `withItms21()` scope helper (API v1.21.0): EU funds 2021 – 2027 from ITMS21+ – projects,
+  grant applications, irregularities/receivables and a procurement summary under the `itms21` key.
+
 ## v2.3.0
 
 - Registry people split by body (API v1.20.0): new `Company` collections `supervisoryBoard`,
