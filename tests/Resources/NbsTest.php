@@ -52,12 +52,12 @@ class NbsTest extends TestCase
 
     public function test_agents_of_an_institution(): void
     {
-        $client = $this->createClient([$this->jsonResponse(['data' => [], 'meta' => ['parent' => ['ico' => '35820713']]])]);
+        $client = $this->createClient([$this->jsonResponse(['data' => [], 'meta' => ['parent' => ['ico' => '31361358']]])]);
 
-        $client->nbs->agents('35820713', ['status' => 'ended', 'natural_person' => false]);
+        $client->nbs->agents('31361358', ['status' => 'ended', 'natural_person' => false]);
 
         $uri = $this->lastRequestUri();
-        $this->assertStringContainsString('/company/ico/35820713/nbs-agents', $uri);
+        $this->assertStringContainsString('/company/ico/31361358/nbs-agents', $uri);
         $this->assertStringContainsString('status=ended', $uri);
         $this->assertStringContainsString('natural_person=0', $uri);
     }

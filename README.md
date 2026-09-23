@@ -247,7 +247,7 @@ $page = $client->nbs->entities([
 ], limit: 50);
 
 // Agents that used to work for an institution
-$former = $client->nbs->agents('35820713', ['status' => 'ended']);
+$former = $client->nbs->agents('31361358', ['status' => 'ended']);
 
 // One entity (also foreign ones without an IČO) with full licence history
 $entity = $client->nbs->entity($page['data'][0]['entity_id']);
