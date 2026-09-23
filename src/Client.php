@@ -12,6 +12,7 @@ use FirmApi\Resources\Companies;
 use FirmApi\Resources\Search;
 use FirmApi\Resources\Batch;
 use FirmApi\Resources\Account;
+use FirmApi\Resources\Nbs;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ConnectException;
@@ -44,6 +45,7 @@ class Client
     public readonly Search $search;
     public readonly Batch $batch;
     public readonly Account $account;
+    public readonly Nbs $nbs;
 
     /**
      * @param string          $apiKey          Your FirmAPI key (Bearer token).
@@ -108,6 +110,7 @@ class Client
         $this->search = new Search($this);
         $this->batch = new Batch($this);
         $this->account = new Account($this);
+        $this->nbs = new Nbs($this);
     }
 
     /**

@@ -234,6 +234,25 @@ Available scope helpers:
 `with(string ...$scopes)` is an escape hatch for passing raw scope tokens
 directly, e.g. `->with('tax', 'sanctions')`.
 
+### NBS register
+
+Financial market entities supervised by Národná banka Slovenska, their licences and
+agent → institution relations with history (requires the `nbs` feature):
+
+```php
+// Every independent financial agent in the insurance sector
+$page = $client->nbs->entities([
+    'category' => 'samostatný finančný agent',
+    'sector' => 'sektor poistenia alebo zaistenia',
+], limit: 50);
+
+// Agents that used to work for an institution
+$former = $client->nbs->agents('35820713', ['status' => 'ended']);
+
+// One entity (also foreign ones without an IČO) with full licence history
+$entity = $client->nbs->entity($page['data'][0]['entity_id']);
+```
+
 ### Search
 
 ```php

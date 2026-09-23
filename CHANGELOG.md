@@ -2,6 +2,15 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.5.0
+
+- New `$client->nbs` resource (API v1.22.0) for the NBS register of financial market entities:
+  `entities()` (filter by category, sector, parent institution, country, natural person, status),
+  `entity()` (one entity with full licence history, including foreign entities without an IČO) and
+  `agents()` (financial agents working for an institution).
+- The `nbs` scope now also carries `licences` (with parent institution, current/ended status),
+  `agents_count`, `is_natural_person` and `entity_id`; `withNbs()` is unchanged.
+
 ## v2.4.0
 
 - New `withItms21()` scope helper (API v1.21.0): EU funds 2021 – 2027 from ITMS21+ – projects,
