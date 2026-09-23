@@ -2,6 +2,11 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## Unreleased
+
+- No code change needed for API v1.23.0: NBS entity arrays returned by `$client->nbs` now carry
+  `person_match` (`address`, `name_postcode` – a probable match – or `null`).
+
 ## v2.5.0
 
 - New `$client->nbs` resource (API v1.22.0) for the NBS register of financial market entities:
