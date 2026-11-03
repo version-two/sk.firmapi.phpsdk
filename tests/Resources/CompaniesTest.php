@@ -118,6 +118,42 @@ class CompaniesTest extends TestCase
         $this->assertSame(49, $company->enrichment('itms21')['projects']['count']);
     }
 
+    public function test_with_convicted_entities_adds_scope_to_request(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '00151866', 'convicted_entities' => ['listed' => false, 'count' => 0, 'entries' => []]]]),
+        ]);
+
+        $company = $client->companies->byIco('00151866')->withConvictedEntities()->get();
+
+        $this->assertStringContainsString('scope=convicted_entities', $this->lastRequestUri());
+        $this->assertFalse($company->enrichment('convicted_entities')['listed']);
+    }
+
+    public function test_with_state_aid_adds_scope_to_request(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '00151866', 'state_aid' => ['listed' => true, 'count' => 1, 'provided_count' => 1, 'provided_total_eur' => 915.3, 'since_year' => 2024, 'entries' => []]]]),
+        ]);
+
+        $company = $client->companies->byIco('00151866')->withStateAid()->get();
+
+        $this->assertStringContainsString('scope=state_aid', $this->lastRequestUri());
+        $this->assertSame(915.3, $company->enrichment('state_aid')['provided_total_eur']);
+    }
+
+    public function test_with_grants_adds_scope_to_request(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '00151866', 'grants' => ['listed' => true, 'count' => 2, 'approved_count' => 1, 'approved_total_eur' => 12500.5, 'since_year' => 2023, 'entries' => []]]]),
+        ]);
+
+        $company = $client->companies->byIco('00151866')->withGrants()->get();
+
+        $this->assertStringContainsString('scope=grants', $this->lastRequestUri());
+        $this->assertSame(12500.5, $company->enrichment('grants')['approved_total_eur']);
+    }
+
     public function test_by_ico_returns_full_company_data(): void
     {
         $companyData = [

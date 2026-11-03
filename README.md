@@ -229,6 +229,7 @@ Available scope helpers:
 `withUvoReferences()`, `withFsImports()`, `withIllegalEmployment()`,
 `withCourtDecisions()`, `withEmployerHeadcount()`, `withSoiTravelAgency()`,
 `withSvpsEstablishments()`, `withCrpProjects()`, `withItms21()`,
+`withConvictedEntities()`, `withStateAid()`, `withGrants()`,
 `withTradeLicenseActivities()`, `withAll()`.
 
 `with(string ...$scopes)` is an escape hatch for passing raw scope tokens

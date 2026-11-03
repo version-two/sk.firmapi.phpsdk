@@ -268,6 +268,24 @@ class CompanyQuery
         return $this;
     }
 
+    public function withConvictedEntities(): static
+    {
+        $this->scopes[] = 'convicted_entities';
+        return $this;
+    }
+
+    public function withStateAid(): static
+    {
+        $this->scopes[] = 'state_aid';
+        return $this;
+    }
+
+    public function withGrants(): static
+    {
+        $this->scopes[] = 'grants';
+        return $this;
+    }
+
     public function withTradeLicenseActivities(): static
     {
         $this->scopes[] = 'trade_license_activities';
