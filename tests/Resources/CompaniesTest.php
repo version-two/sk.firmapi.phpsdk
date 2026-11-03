@@ -154,6 +154,27 @@ class CompaniesTest extends TestCase
         $this->assertSame(12500.5, $company->enrichment('grants')['approved_total_eur']);
     }
 
+    public function test_vat_registration_comes_with_the_tax_scope(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '11111111', 'vat_registration' => [
+                'type' => '§4b', 'ic_dph' => 'SK2020999001', 'is_group_member' => true, 'group_member_count' => 3,
+                'registered_at' => '2004-03-15', 'type_changed_at' => '2018-01-01', 'vat_payer_since' => '2018-01-01',
+            ]]]),
+            $this->jsonResponse(['data' => ['ico' => '33333333']]),
+        ]);
+
+        $company = $client->companies->byIco('11111111')->withTax()->get();
+
+        $this->assertStringContainsString('scope=tax', $this->lastRequestUri());
+        $this->assertTrue($company->enrichment('vat_registration')['is_group_member']);
+        $this->assertSame(3, $company->enrichment('vat_registration')['group_member_count']);
+
+        $unknown = $client->companies->byIco('33333333')->withTax()->get();
+
+        $this->assertFalse($unknown->has('vat_registration'));
+    }
+
     public function test_e_box_is_read_without_a_scope(): void
     {
         $client = $this->createClient([

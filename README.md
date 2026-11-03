@@ -235,6 +235,13 @@ Available scope helpers:
 `with(string ...$scopes)` is an escape hatch for passing raw scope tokens
 directly, e.g. `->with('tax', 'sanctions')`.
 
+`withTax()` also returns `vat_registration` (VAT payers list of Finančná správa):
+`$company->enrichment('vat_registration')` gives `type` (e.g. `§4b`), `is_group_member`
+(VAT group, `§4b` or `§4c`), `group_member_count`, `ic_dph`, `registered_at`,
+`type_changed_at` and `vat_payer_since`. The key is absent when the company is not listed
+or the registration type has not been loaded yet; use `$company->has('vat_registration')`
+and never read absence as "not a group member".
+
 `e_box` (NASES electronic mailbox activated for delivery, with the month of the
 published list) is returned on every request and needs no scope:
 `$company->enrichment('e_box')` gives `['activated_for_delivery' => bool, 'as_of' => 'YYYY-MM']`,

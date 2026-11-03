@@ -2,6 +2,15 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.6.1
+
+- No code change needed for API v1.26.0: the `tax` scope (`withTax()`) now also returns a
+  `vat_registration` block, read with `$company->enrichment('vat_registration')`. It holds the
+  registration type from the VAT payers list (`type`, e.g. `§4b`), `is_group_member` (VAT group,
+  `§4b` or `§4c`), `group_member_count`, `ic_dph` and the registration dates. The key is absent
+  when the company is not listed or the registration type has not been loaded yet, so check
+  `$company->has('vat_registration')` before reading it; absence never means "not a member".
+
 ## v2.6.0
 
 - New scope helpers `withConvictedEntities()` (register of convicted legal entities, General
