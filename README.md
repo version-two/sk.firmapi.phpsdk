@@ -242,6 +242,26 @@ directly, e.g. `->with('tax', 'sanctions')`.
 or the registration type has not been loaded yet; use `$company->has('vat_registration')`
 and never read absence as "not a group member".
 
+The other members of a VAT group are one call away, keyed by that IČ DPH (requires a plan
+with tax data):
+
+```php
+$company = $client->companies->byIco('34109340')->withTax()->get();
+$registration = $company->enrichment('vat_registration');
+
+if ($registration['is_group_member'] ?? false) {
+    $page = $client->companies->groupMembers($registration['ic_dph'], limit: 50);
+
+    foreach ($page['data'] as $member) {
+        echo "{$member['ico']} {$member['name']} ({$member['type']})\n";
+    }
+
+    // meta.total_members counts every member; meta.members_without_ico are listed
+    // by the register without an IČO and are never named.
+    $matches = $client->companies->groupMembers($registration['ic_dph'], search: 'holding');
+}
+```
+
 `e_box` (NASES electronic mailbox activated for delivery, with the month of the
 published list) is returned on every request and needs no scope:
 `$company->enrichment('e_box')` gives `['activated_for_delivery' => bool, 'as_of' => 'YYYY-MM']`,

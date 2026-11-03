@@ -175,6 +175,41 @@ class CompaniesTest extends TestCase
         $this->assertFalse($unknown->has('vat_registration'));
     }
 
+    public function test_group_members_pages_the_vat_group_by_its_ic_dph(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse([
+                'data' => [['ico' => '22222222', 'name' => 'Alfa Logistika s.r.o.', 'type' => '§4c']],
+                'meta' => ['ic_dph' => 'SK2020999001', 'total_members' => 3, 'members_without_ico' => 1, 'limit' => 25, 'offset' => 0, 'has_more' => false],
+            ]),
+        ]);
+
+        $page = $client->companies->groupMembers('SK2020999001');
+
+        $uri = $this->lastRequestUri();
+        $this->assertSame('GET', $this->lastRequestMethod());
+        $this->assertStringContainsString('/vat-groups/SK2020999001/members', $uri);
+        $this->assertStringContainsString('limit=25', $uri);
+        $this->assertStringContainsString('offset=0', $uri);
+        $this->assertStringNotContainsString('q=', $uri);
+        $this->assertSame('22222222', $page['data'][0]['ico']);
+        $this->assertSame(3, $page['meta']['total_members']);
+        $this->assertSame(1, $page['meta']['members_without_ico']);
+    }
+
+    public function test_group_members_passes_the_search_and_clamps_the_page_size(): void
+    {
+        $client = $this->createClient([$this->jsonResponse(['data' => [], 'meta' => []])]);
+
+        $client->companies->groupMembers('SK2020/999001', 'holding', 500, 50);
+
+        $uri = $this->lastRequestUri();
+        $this->assertStringContainsString('/vat-groups/SK2020%2F999001/members', $uri);
+        $this->assertStringContainsString('q=holding', $uri);
+        $this->assertStringContainsString('limit=100', $uri);
+        $this->assertStringContainsString('offset=50', $uri);
+    }
+
     public function test_e_box_is_read_without_a_scope(): void
     {
         $client = $this->createClient([

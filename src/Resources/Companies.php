@@ -53,4 +53,26 @@ class Companies
             $this->maxStaleRetries,
         );
     }
+
+    /**
+     * Members of a VAT group (§ 4b / § 4c), paged. Take the IČ DPH from
+     * `vat_registration.ic_dph` of any member (`withTax()`). Members the register
+     * lists without an IČO are counted in `meta.members_without_ico`, never named.
+     * Requires a plan with tax data (Starter+).
+     *
+     * @param string $icDph IČ DPH of the group, e.g. `SK2020999001`
+     * @param string|null $search Member name fragment, or IČO prefix when numeric
+     * @return array<string, mixed> `data` (members: ico, name, type, registration dates) and
+     *     `meta` (ic_dph, total_members, members_without_ico, limit, offset, has_more)
+     * @throws \FirmApi\Exceptions\ApiException
+     */
+    public function groupMembers(string $icDph, ?string $search = null, int $limit = 25, int $offset = 0): array
+    {
+        $query = ['limit' => max(1, min($limit, 100)), 'offset' => max(0, $offset)];
+        if ($search !== null && $search !== '') {
+            $query['q'] = $search;
+        }
+
+        return $this->client->get('/vat-groups/' . rawurlencode($icDph) . '/members', $query);
+    }
 }

@@ -2,6 +2,14 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.7.0
+
+- New `$client->companies->groupMembers($icDph, $search, $limit, $offset)` (API v1.26.0): the
+  members of a VAT group, paged, keyed by the group IČ DPH from `vat_registration.ic_dph`. Each
+  member has `ico`, `name`, `type` and the registration dates. `meta.total_members` counts every
+  member; `meta.members_without_ico` are those the register lists without an IČO, which are
+  never named.
+
 ## v2.6.1
 
 - No code change needed for API v1.26.0: the `tax` scope (`withTax()`) now also returns a
