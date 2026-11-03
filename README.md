@@ -235,6 +235,11 @@ Available scope helpers:
 `with(string ...$scopes)` is an escape hatch for passing raw scope tokens
 directly, e.g. `->with('tax', 'sanctions')`.
 
+`e_box` (NASES electronic mailbox activated for delivery, with the month of the
+published list) is returned on every request and needs no scope:
+`$company->enrichment('e_box')` gives `['activated_for_delivery' => bool, 'as_of' => 'YYYY-MM']`,
+or `null` until the list has been imported.
+
 ### NBS register
 
 Financial market entities supervised by Národná banka Slovenska, their licences and

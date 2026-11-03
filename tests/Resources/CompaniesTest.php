@@ -154,6 +154,19 @@ class CompaniesTest extends TestCase
         $this->assertSame(12500.5, $company->enrichment('grants')['approved_total_eur']);
     }
 
+    public function test_e_box_is_read_without_a_scope(): void
+    {
+        $client = $this->createClient([
+            $this->jsonResponse(['data' => ['ico' => '00151866', 'e_box' => ['activated_for_delivery' => true, 'as_of' => '2026-10']]]),
+        ]);
+
+        $company = $client->companies->byIco('00151866')->get();
+
+        $this->assertStringNotContainsString('scope=', $this->lastRequestUri());
+        $this->assertTrue($company->enrichment('e_box')['activated_for_delivery']);
+        $this->assertSame('2026-10', $company->enrichment('e_box')['as_of']);
+    }
+
     public function test_by_ico_returns_full_company_data(): void
     {
         $companyData = [

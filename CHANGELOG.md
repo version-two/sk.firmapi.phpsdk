@@ -9,6 +9,8 @@ All notable changes to the FirmAPI PHP SDK are documented here.
   `withGrants()` (grant applications and approved amounts from the Ministry of Economy, the
   Ministry of Environment and the Government Office, from 2023). Each result is read with
   `$company->enrichment('<scope>')`; `listed` is always present.
+- `$company->enrichment('e_box')` returns the NASES electronic mailbox flag
+  (`activated_for_delivery`, `as_of`); it comes with every response and needs no scope.
 - No code change needed for API v1.23.0: NBS entity arrays returned by `$client->nbs` now carry
   `person_match` (`address`, `name_postcode` – a probable match – or `null`).
 
