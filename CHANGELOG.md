@@ -2,6 +2,13 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.7.1
+
+- No code change needed for API v1.32.0: the `transport_licence` scope (`withTransportLicence()`)
+  now also returns `licences`, every licence and permit of the carrier (`kind` `licence` or
+  `permit`, `number`, `transport_type`, `vehicles_count`, `valid_from`, `valid_to`, `is_valid`).
+  `has_licence` is true only when one of them is valid today.
+
 ## v2.7.0
 
 - New `$client->companies->groupMembers($icDph, $search, $limit, $offset)` (API v1.26.0): the
