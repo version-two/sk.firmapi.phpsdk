@@ -2,6 +2,22 @@
 
 All notable changes to the FirmAPI PHP SDK are documented here.
 
+## v2.7.2
+
+### Changed
+- Batch lookups are asynchronous. `byIco()` and `byNames()` return the batch (`data.id`,
+  `data.status`, HTTP 202). Poll `status($id)` until `data.status` is `completed`, then call
+  `results($id)` (keyed by IČO or by the name query). `results()` throws `ApiException` with code
+  409 while the batch is not finished or after it failed. A batch is processed within an hour,
+  costs 1 credit per 2 items (rounded up), and its status and results are free for 7 days. Before
+  this release both status endpoints answered 404.
+
+### Fixed
+- README and docblocks: batch needs the Professional plan (not Starter); `account->usage()`,
+  `quota()` and `history()` document the real response (`billing_mode` `credits` | `legacy`);
+  rate limit section no longer lists response headers the API does not send; sandbox demo IČO;
+  install command `^2.7.2`; contact form link instead of an e-mail address.
+
 ## v2.7.1
 
 - No code change needed for API v1.32.0: the `transport_licence` scope (`withTransportLicence()`)

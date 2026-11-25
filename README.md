@@ -10,11 +10,11 @@ Official PHP SDK for [FirmAPI](https://firmapi.sk) - Slovak Company Data API.
 ## Installation
 
 ```bash
-composer require firmapi/phpsdk:^2.0
+composer require firmapi/phpsdk:^2.7.2
 ```
 
-> These docs cover **v2.x**. Upgrading from v1? See the
-> [Upgrading from v1.x](#upgrading-from-v1x) section for the breaking changes.
+> These docs cover **v2.x**. Upgrading? See [Upgrading](#upgrading) and
+> [CHANGELOG.md](CHANGELOG.md) for the breaking changes.
 
 ## Quick Start
 
@@ -39,7 +39,7 @@ foreach ($results['results'] as $result) {
 ## Fresh vs. cached data (important)
 
 FirmAPI serves precomputed company data immediately. When a background refresh
-is queued, the response carries `meta.stale = true` — the data you received is
+is queued, the response carries `meta.stale = true` – the data you received is
 still valid; the flag only tells you a newer version is being prepared.
 
 By default (since v2.0) the SDK returns that immediately-available data without
@@ -100,8 +100,12 @@ When sandbox is active the base URL and key are overridden with the built-in
 sandbox endpoint automatically, so any key you pass is ignored. An explicit
 `sandbox: true|false` argument always wins over the constant.
 
+The sandbox only knows ten demo companies, for example `36421928` (Websupport)
+or `31333532` (ESET). Any other IČO, including `51636549` used in the examples
+below, answers 404 there. `GET /v1/sandbox/companies` lists them.
+
 Transient failures (HTTP 5xx and network errors) are retried automatically with
-exponential backoff, up to `maxRetries`. HTTP 429 is **not** retried — it is
+exponential backoff, up to `maxRetries`. HTTP 429 is **not** retried – it is
 raised as a `RateLimitException` so you control pacing.
 
 ### Laravel
@@ -153,13 +157,13 @@ $company = $client->companies->byIco('51636549')->get();
 $company = $client->companies->byOrsrId('427482')->get();
 ```
 
-Companies are always identified by IČO or ORSR ID — the SDK does not expose
+Companies are always identified by IČO or ORSR ID – the SDK does not expose
 internal numeric database identifiers.
 
 #### The `Company` object
 
 `get()` returns a typed, read-only `FirmApi\Objects\Company` value object with
-IDE-friendly accessors and `FirmApi\Support\Collection` lists — no Laravel/
+IDE-friendly accessors and `FirmApi\Support\Collection` lists – no Laravel/
 Illuminate dependency required. It also implements `ArrayAccess`, so existing
 `$company['data']['ico']` code keeps working.
 
@@ -311,33 +315,49 @@ $results = $client->search->advanced([
 
 ### Batch Operations
 
-Batch operations require Starter plan or higher.
+Batch operations require the Professional plan or higher. The maximum number of
+items per batch depends on your plan (Professional 100, Enterprise 1,000). A batch
+costs 1 credit per 2 items (rounded up) and is processed asynchronously within an
+hour, when the server is less busy. Status and results are free and kept for 7 days.
 
 ```php
-// Batch lookup by IČO
-$results = $client->batch->byIco(['51636549', '12345678']);
+// Submit a batch by IČO (or $client->batch->byNames([...]))
+$batch = $client->batch->byIco(['51636549', '12345678']);
+$batchId = $batch['data']['id'];          // status is 'pending'
 
-// Batch lookup by names
-$results = $client->batch->byNames(['Version Two s. r. o.', 'Example Company']);
+// Poll the status (free)
+$status = $client->batch->status($batchId);
+$status['data']['status'];                // pending | processing | completed | failed
 
-// Check batch job status
-$status = $client->batch->status('batch-id-123');
-
-// Get batch results
-$results = $client->batch->results('batch-id-123');
+// Once completed, download the results (free); ApiException with code 409 while not finished
+$result = $client->batch->results($batchId);
+$result['meta'];                          // id, type, total, found, not_found
+$result['data']['51636549']['found'];     // bool
+$result['data']['51636549']['data'];      // ico, name, address, legal_form, established_date, or null
 ```
 
 ### Account
 
+Responses depend on how your account is billed; `data.billing_mode` is
+`credits` or `legacy`.
+
 ```php
-// Get current usage
+// Current period usage
 $usage = $client->account->usage();
+if ($usage['data']['billing_mode'] === 'credits') {
+    $usage['data']['credits']['used_this_period'];
+    $usage['data']['credits']['balance'];
+}
 
-// Get remaining quota
+// Remaining quota
 $quota = $client->account->quota();
+if ($quota['data']['billing_mode'] === 'credits') {
+    $quota['data']['credits_remaining'];
+}
 
-// Get usage history (range depends on your subscription tier)
+// Daily usage history (date, requests, credits); the range depends on your plan
 $history = $client->account->history();
+$history['meta']['history_months'];
 ```
 
 ## Error Handling
@@ -365,13 +385,22 @@ try {
 
 ## Rate Limits
 
-API rate limits depend on your subscription tier. See [pricing](https://firmapi.sk/en/pricing) for details.
+Usage is metered in credits: one API call costs one credit, a batch 1 credit per
+2 items, cached and error responses cost nothing. Each plan grants a monthly credit balance; see
+[pricing](https://firmapi.sk/en/pricing) for the current plans. Independently of
+the plan, one API key may send at most 120 requests per minute; beyond that the
+API answers 429 and the SDK throws `RateLimitException`
+(`getRetryAfter()` reads the `Retry-After` header, 60 seconds when absent).
 
-Rate limit headers are included in all responses:
-- `X-RateLimit-Limit-Minute` / `X-RateLimit-Remaining-Minute`
-- `X-RateLimit-Limit-Daily` / `X-RateLimit-Remaining-Daily`
+## Upgrading
 
-## Upgrading from v1.x
+### v2.7.2
+
+Batches are asynchronous: `byIco()` and `byNames()` return the batch ID
+(`data.id`); `status($id)` reports progress and `results($id)` returns the
+results once `data.status` is `completed`.
+
+### From v1.x to v2.0
 
 v2.0 is a behavior/API change:
 
@@ -387,6 +416,8 @@ v2.0 is a behavior/API change:
 
 MIT License. See [LICENSE](LICENSE) for details.
 
-## Documentation
+## Documentation and support
 
-[https://firmapi.sk/en/docs](https://firmapi.sk/en/docs)
+- Documentation: [https://firmapi.sk/en/docs](https://firmapi.sk/en/docs)
+- SDK overview: [https://firmapi.sk/en/docs/sdk](https://firmapi.sk/en/docs/sdk)
+- Contact form: [https://firmapi.sk/en/contact](https://firmapi.sk/en/contact)

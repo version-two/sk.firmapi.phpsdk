@@ -17,7 +17,8 @@ class Account
     }
 
     /**
-     * Get current period usage statistics.
+     * Get current period usage. `data.billing_mode` is `credits` (`data.credits.balance`,
+     * `used_this_period`, `monthly_grant`, `rollover`) or `legacy` (`data.usage.this_month`).
      *
      * @return array<string, mixed>
      * @throws ApiException
@@ -28,7 +29,8 @@ class Account
     }
 
     /**
-     * Get remaining quota for current period.
+     * Get the remaining quota. `data.billing_mode` is `credits` (`data.credits_remaining`,
+     * `credits_limit`, `next_grant`) or `legacy` (`data.monthly.remaining`, `limit`, `used`).
      *
      * @return array<string, mixed>
      * @throws ApiException
@@ -39,8 +41,8 @@ class Account
     }
 
     /**
-     * Get usage history.
-     * History range is determined by your subscription tier.
+     * Get daily usage history (`date`, `requests`, `credits`). The range is determined by your
+     * subscription tier (`meta.history_months`).
      *
      * @return array<string, mixed>
      * @throws ApiException
